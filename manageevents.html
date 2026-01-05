@@ -8,129 +8,159 @@
 </head>
 <body>
 
+  <!-- NAVBAR -->
+  <nav>
+    <div>
+      <img id="profilePic" width="50" alt="User profile picture">
+      <p>Welcome <span id="username"></span></p> 
+    </div>
+
+    <div>
+      <button id="upload">update your profile</button>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
 <section>
   <h2>Manage Your Events</h2>
   <div id="manageEventsList"></div>
 </section>
 
 <script type="module">
-  import { auth, db } from "./firebase.js";
-  import { onAuthStateChanged } 
-  from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-  import { collection, getDocs, query, where, doc, deleteDoc, updateDoc } 
-  from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+ import { auth, db } from "./firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+import { collection, getDocs, query, where, doc, deleteDoc, updateDoc, getDoc } 
+from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-  const manageEventsList = document.getElementById("manageEventsList");
-  let currentUserId = null;
+const manageEventsList = document.getElementById("manageEventsList");
+const myUserName = document.getElementById("username");
+const profilePic = document.getElementById("profilePic");
+let currentUserId = null;
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  currentUserId = user.uid;
+
+  // Fetch user data
+  const docRef = doc(db, 'users', currentUserId);
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists()) {
+    const userData = docSnap.data();
+    myUserName.innerText = userData.username;
+    profilePic.src = userData.photoURL;
+  }
+
+  document.getElementById("upload").addEventListener("click", () => {
+    window.location.href = "upload.html";
+  });
+
+  displayUserEvents();
+});
+
+async function displayUserEvents() {
+  manageEventsList.innerHTML = "";
+
+  try {
+    const q = query(collection(db, "events"), where("createdBy", "==", currentUserId));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      manageEventsList.innerHTML = "<p>You have not created any events yet.</p>";
       return;
     }
 
-    currentUserId = user.uid;
-    displayUserEvents();
-  });
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const eventId = docSnap.id;
 
-  async function displayUserEvents() {
-    manageEventsList.innerHTML = "";
+      const card = document.createElement("div");
+      card.classList.add("event-card");
 
-    try {
-      const q = query(
-        collection(db, "events"),
-        where("createdBy", "==", currentUserId)
-      );
+      card.innerHTML = `
+        <h3>${data.title}</h3>
+        <p>Location: ${data.location}</p>
+        <p>Time: ${new Date(data.time).toLocaleString()}</p>
+        <button class="edit-btn">Edit</button>
+        <button class="delete-btn">Delete</button>
+      `;
 
-      const snapshot = await getDocs(q);
+      const deleteBtn = card.querySelector(".delete-btn");
+      const editBtn = card.querySelector(".edit-btn");
 
-      if (snapshot.empty) {
-        manageEventsList.innerHTML = "<p>You have not created any events yet.</p>";
-        return;
-      }
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const eventId = docSnap.id;
-
-        const card = document.createElement("div");
-        card.classList.add("event-card");
-
-        card.innerHTML = `
-          <h3>${data.title}</h3>
-          <p>Location: ${data.location}</p>
-          <p>Time: ${new Date(data.time).toLocaleString()}</p>
-          <button class="edit-btn">Edit</button>
-          <button class="delete-btn">Delete</button>
-        `;
-
-        const deleteBtn = card.querySelector(".delete-btn");
-        const editBtn = card.querySelector(".edit-btn");
-
-        deleteBtn.addEventListener("click", async () => {
-          const confirmDelete = confirm("Are you sure you want to delete this event?");
-          if (!confirmDelete) return;
-
-          await deleteDoc(doc(db, "events", eventId));
-          card.remove();
-          alert("Event deleted successfully");
-        });
-
-        editBtn.addEventListener("click", () => {
-          showEditForm(eventId, data, card);
-        });
-
-        manageEventsList.appendChild(card);
+      deleteBtn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to delete this event?")) return;
+        await deleteDoc(doc(db, "events", eventId));
+        card.remove();
+        alert("Event deleted successfully");
       });
 
-    } catch (error) {
-      console.error("Error loading events:", error);
+      editBtn.addEventListener("click", () => {
+        showEditForm(eventId, data, card);
+      });
+
+      manageEventsList.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error("Error loading events:", error);
+  }
+}
+
+function showEditForm(eventId, eventData, card) {
+  card.innerHTML = `
+    <input type="text" id="editTitle" value="${eventData.title}">
+    <input type="text" id="editLocation" value="${eventData.location}">
+    <input type="datetime-local" id="editTime" value="${new Date(eventData.time).toISOString().slice(0,16)}">
+    <button class="save-btn">Save</button>
+    <button class="cancel-btn">Cancel</button>
+  `;
+
+  const saveBtn = card.querySelector(".save-btn");
+  const cancelBtn = card.querySelector(".cancel-btn");
+
+  cancelBtn.addEventListener("click", displayUserEvents);
+
+  saveBtn.addEventListener("click", async () => {
+    const updatedTitle = card.querySelector("#editTitle").value.trim();
+    const updatedLocation = card.querySelector("#editLocation").value.trim();
+    const updatedTime = card.querySelector("#editTime").value;
+
+    if (!updatedTitle || !updatedLocation || !updatedTime) {
+      alert("All fields are required");
+      return;
     }
-  }
 
-  function showEditForm(eventId, eventData, card) {
-    card.innerHTML = `
-      <input type="text" id="editTitle" value="${eventData.title}">
-      <input type="text" id="editLocation" value="${eventData.location}">
-      <input type="datetime-local" id="editTime"
-        value="${new Date(eventData.time).toISOString().slice(0,16)}">
-
-      <button class="save-btn">Save</button>
-      <button class="cancel-btn">Cancel</button>
-    `;
-
-    const saveBtn = card.querySelector(".save-btn");
-    const cancelBtn = card.querySelector(".cancel-btn");
-
-    cancelBtn.addEventListener("click", () => {
+    try {
+      await updateDoc(doc(db, "events", eventId), {
+        title: updatedTitle,
+        location: updatedLocation,
+        time: updatedTime
+      });
+      alert("Event updated successfully");
       displayUserEvents();
-    });
+    } catch (error) {
+      console.error("Error updating event:", error);
+      alert("Failed to update event");
+    }
+  });
+}
 
-    saveBtn.addEventListener("click", async () => {
-      const updatedTitle = card.querySelector("#editTitle").value.trim();
-      const updatedLocation = card.querySelector("#editLocation").value.trim();
-      const updatedTime = card.querySelector("#editTime").value;
+// logout 
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      alert('Logout Successful');
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  });
 
-      if (!updatedTitle || !updatedLocation || !updatedTime) {
-        alert("All fields are required");
-        return;
-      }
-
-      try {
-        await updateDoc(doc(db, "events", eventId), {
-          title: updatedTitle,
-          location: updatedLocation,
-          time: updatedTime
-        });
-
-        alert("Event updated successfully");
-        displayUserEvents();
-      } catch (error) {
-        console.error("Error updating event:", error);
-        alert("Failed to update event");
-      }
-    });
-  }
 </script>
 
 </body>

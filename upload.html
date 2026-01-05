@@ -1,77 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Upload Profile Picture</title>
+  <meta charset="UTF-8">
+  <title>Complete Your Profile</title>
+  <link rel="stylesheet" href="/profile.css">
 </head>
 <body>
-    <h2>Upload Profile Picture</h2>
-    <form id="uploadform">
-         <input type="text" id="image" placeholder="Image URL" required />
-        <button type="submit">Upload</button>
-        <button type="submit">create an event</button>
 
-    </form>
+  <!-- NAVBAR -->
+  <nav>
+    <div>
+      <img id="profilePic" width="50" alt="User profile picture">
+      <p>Welcome <span id="navUsername"></span></p>
+    </div>
 
-    <button id="logoutBtn">Logout</button>
+    <div>
+      <button id="manage">Manage Events</button>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </nav>
 
+  <!-- FORM -->
+  <form id="completeProfileForm">
+    <input
+      type="text"
+      id="usernameInput"
+      placeholder="Choose a username"
+      required
+    />
 
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { auth, db } from "./firebase.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-  import { doc, getDoc, setDoc, updateDoc } 
-from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    <input
+      type="text"
+      id="photoURLInput"
+      placeholder="Profile picture URL"
+      required
+    />
 
-  const uploadform = document.getElementById('uploadform');
-  const img = document.getElementById('image');
-  const myLogoutBtn = document.getElementById('logoutBtn');
+    <button type="submit">Save Profile</button>
+  </form>
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+    import { onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { doc, getDoc, setDoc }
+      from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-    
+    const form = document.getElementById("completeProfileForm");
+    const usernameInput = document.getElementById("usernameInput");
+    const photoInput = document.getElementById("photoURLInput");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const navUsername = document.getElementById("navUsername");
+    const profilePic = document.getElementById("profilePic");
 
-    uploadform.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const docRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(docRef);
-      try {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          userData.photoURL = img.value;
-          await updateDoc(docRef, {
-            photoURL: img.value
-          })
-          alert('Profile picture updated successfully!');
-          window.location.href = 'dashboard.html';
-        }
-      } catch (error) {
-        console.error('Error updating profile picture:', error);
+    let currentUserId = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
       }
-    });
-    });
 
-  
-
-
- // logout 
-  myLogoutBtn.addEventListener('click', async () => {
-    try {
-      await signOut(auth);
-      alert('Logout Successful');
-      window.location.href = 'login.html';
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
+       document.getElementById("manage").addEventListener("click", () => {
+    window.location.href = "manageevents.html";
   });
 
+      currentUserId = user.uid;
 
-  
-</script>
+      try {
+        const userRef = doc(db, "users", currentUserId);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+
+          if (data.username) {
+            usernameInput.value = data.username;
+            navUsername.innerText = data.username;
+          }
+
+          if (data.photoURL) {
+            photoInput.value = data.photoURL;
+            profilePic.src = data.photoURL;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = usernameInput.value.trim();
+      const photoURL = photoInput.value.trim();
+
+      if (!username || !photoURL) {
+        alert("Please fill in all fields");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", currentUserId);
+
+        await setDoc(
+          userRef,
+          {
+            username,
+            photoURL,
+            completedProfile: true,
+            updatedAt: new Date()
+          },
+          { merge: true }
+        );
+
+        alert("Profile saved successfully");
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        console.error("Error saving profile:", error);
+        alert("Failed to save profile");
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "login.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+      }
+    });
+  </script>
+
 </body>
 </html>
