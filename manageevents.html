@@ -16,6 +16,7 @@
     </div>
 
     <div>
+      <button href="dashboard.html" id="home">Home</button>
       <button id="upload">update your profile</button>
       <button id="logoutBtn">Log out</button>
     </div>
@@ -57,6 +58,10 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById("upload").addEventListener("click", () => {
     window.location.href = "upload.html";
+  });
+
+  document.getElementById("home").addEventListener("click", () => {
+    window.location.href = "dashboard.html";
   });
 
   displayUserEvents();
