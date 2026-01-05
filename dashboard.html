@@ -1,0 +1,297 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="dashstyle.css">
+    <title>Document</title>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav>
+    <div>
+      <img id="profilePic" width="50" alt="User profile picture">
+      <p>Welcome <span id="username"></span></p> 
+    </div>
+
+    <div>
+      <button id="manage">Manage Events</button>
+      <button id="upload">Change your dp</button>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </nav>
+
+  <hr>
+
+  <!-- CREATE EVENT SECTION -->
+  <section>
+    <h2>Create Event</h2>
+
+    <form id="createEventForm">
+
+  <input type="text" id="eventTitle" placeholder="Event Title" required>
+  <input type="text" id="eventLocation" placeholder="Location" required>
+  <input type="datetime-local" id="eventTime" required>
+  <button type="submit">Create Event</button>
+
+</form>
+  </section>
+
+  <hr>
+
+  <!-- AVAILABLE EVENTS -->
+  <section>
+    <h2>Available Events</h2>
+
+    <div id="eventsList">
+      <!-- Event cards will be injected here -->
+      
+      <!-- Example structure
+      <div class="event-card">
+        <h3>Event Title</h3>
+        <p>Location: Lagos</p>
+        <p>Time: 2025-01-01 10:00</p>
+        <button>Book Event</button>
+      </div>
+      -->
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- EVENT LOG -->
+  <section>
+    <h2>My Event Log</h2>
+
+    <div id="eventLog">
+      <!-- Booked events appear here -->
+
+      <!-- Example
+      <div class="log-card">
+        <h4>Booked Event Title</h4>
+        <button>Delete</button>
+      </div>
+      -->
+    </div>
+  </section>
+
+</body>
+
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { auth, db } from "./firebase.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+  import { doc, getDoc, collection, addDoc, serverTimestamp, getDocs, query, where, deleteDoc } 
+from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+
+  // Other elements
+
+  const manageBtn = document.getElementById("manage");
+
+  const myUserName = document.getElementById('username');
+  const profilePic = document.getElementById('profilePic');
+  const uploadBtn = document.getElementById("upload");
+  // events create elements
+  const myCreateEventForm = document.getElementById('createEventForm');
+  const myEventTime = document.getElementById('eventTime');
+  const myEventLocation = document.getElementById('eventLocation');
+  const myEventTitle = document.getElementById('eventTitle');
+
+  // display events section
+  const myEventList = document.getElementById('eventsList')
+  // event log section
+  const myEventLog = document.getElementById('eventLog');
+
+
+
+  manageBtn.addEventListener('click', () => {
+    window.location.href = 'manageevents.html';
+  });
+ let currentUserId = null;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    currentUserId = user.uid;
+
+
+    // fetch user data
+
+    const docRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+      myUserName.innerText = userData.username;
+      profilePic.src = userData.photoURL;
+    }
+
+     displayEvents();
+  displayLog();
+  });
+
+  // create an event
+
+  myCreateEventForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    //get form values
+    const title = myEventTitle.value.trim();
+    const location = myEventLocation.value.trim();
+    const time = myEventTime.value;
+
+    // if (!title || !location || !time ) {
+    //   alert("please fill in all fields");
+    //   return;
+    // }
+
+    console.log("Current user ID:", currentUserId);
+
+    try {
+      await addDoc(collection(db, 'events'), {
+        title,
+        location,
+        time,
+        createdBy: currentUserId,
+        createdAt: serverTimestamp()
+  });
+
+  myCreateEventForm.reset();
+    alert("Event created successfully");
+    window.location.reload();
+} catch (error) {
+    console.error("Error creating event:", error);
+    alert("Failed to create event");
+  }
+
+  });
+
+  //display events
+  const eventRef = collection(db, 'events');
+  
+  async function displayEvents() {
+    try {
+      const eventSnapshot = await getDocs(eventRef);
+     
+      
+      eventSnapshot.forEach((doc) => {
+        const eventData = doc.data();
+        const eventId = doc.id;
+        const eventCard = document.createElement('div');
+        eventCard.innerHTML = `
+        <div class="event-card">
+          <h3>${eventData.title}</h3>
+          <p>Location: ${eventData.location}</p>
+          <p>Time: ${new Date(eventData.time).toLocaleString()}</p>
+          <button class="book-btn">Book Event</button>
+        </div>
+        `;
+        const bookBtn = eventCard.querySelector(".book-btn");
+
+    bookBtn.addEventListener("click", () => {
+      bookEvent(eventId, eventData);
+    });
+        myEventList.appendChild(eventCard);
+    });
+    } catch (error) {
+      console.error("Error getting document: ", error);
+    }
+  }
+
+  //book event function
+
+  async function bookEvent(eventId, eventData) {
+
+    if (!currentUserId) {
+    alert("Please login to book events");
+    return;
+  }
+
+    try{
+      await addDoc(collection(db, "bookedEvents"), {
+        eventId : eventId,
+        title: eventData.title,
+        location: eventData.location,
+        time: eventData.time,
+        bookedBy:currentUserId,
+        bookedAt: serverTimestamp()
+      });
+      alert("Event booked successfully");
+      window.location.reload();
+    } catch(error) {
+      console.error("error booking event:", error);
+      alert("failed to book event");
+    }
+  }
+
+  // Display booked events in event log
+
+  const eventLogRef = collection(db, 'bookedEvents');
+  
+ async function displayLog() {
+  myEventLog.innerHTML = "";
+
+  try {
+    const q = query(
+      collection(db, "bookedEvents"),
+      where("bookedBy", "==", currentUserId)
+    );
+
+    const logSnapshot = await getDocs(q);
+
+    logSnapshot.forEach((docLog) => {
+      const logData = docLog.data();
+      const logId = docLog.id;
+
+      const logCard = document.createElement("div");
+      logCard.classList.add("event-card");
+
+      logCard.innerHTML = `
+        <h3>${logData.title}</h3>
+        <p>Location: ${logData.location}</p>
+        <p>Time: ${new Date(logData.time).toLocaleString()}</p>
+        <button class="delete-btn">Delete Event</button>
+      `;
+
+      const deleteBtn = logCard.querySelector(".delete-btn");
+
+      deleteBtn.addEventListener("click", async () => {
+        await deleteDoc(doc(db, "bookedEvents", logId));
+        logCard.remove();
+        alert("Booked event deleted");
+        window.location.reload();
+      });
+
+      myEventLog.appendChild(logCard);
+    });
+  } catch (error) {
+    console.error("Error loading event log:", error);
+  }
+}
+
+
+
+  // upload button
+uploadBtn.addEventListener('click', () => {
+    window.location.href = 'upload.html';
+  });
+
+ // logout 
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+      await signOut(auth);
+      alert('Logout Successful');
+      window.location.href = 'login.html';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  });
+  
+</script>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="login.css">
+    <title>Login</title>
+</head>
+<body>
+<div class="container">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Enter your email" required>
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter password" required>
+      <p id="message"></p>
+
+      <button type="submit">Login</button>
+    </form>
+    <p class="login-text">Don't have an account? <a href="signup.html">Register</a></p>
+</div>
+
+<script type="module">
+
+  
+  import { auth } from "./firebase.js";
+  import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+
+  const loginForm = document.getElementById('loginForm');
+  const message = document.getElementById('message');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = loginForm.email.value;
+    const password = loginForm.password.value;
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      console.log('User logged in:', user);
+
+      alert('Login Successful');
+      window.location.href = 'dashboard.html';
+    } catch (error) {
+      message.innerHTML = error.message.replace('Firebase: ', '');
+      console.error('Error logging in user:', error);
+    }
+  });
+</script>
+</body>
+</html>

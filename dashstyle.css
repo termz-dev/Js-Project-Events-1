@@ -1,0 +1,158 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  background-color: #f8f9fa;
+  color: #1c1e21;
+  padding: 20px;
+}
+
+/* NAVBAR */
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+nav div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#profilePic {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff5722;
+}
+
+#username {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+/* BUTTONS */
+
+button {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: #ff5722;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #e64a19;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* SECTIONS */
+
+section {
+  background-color: #ffffff;
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+section h2 {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+/* FORMS */
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #dcdcdc;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #ff5722;
+}
+
+/* EVENTS LIST */
+
+#eventsList,
+#eventLog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+/* EVENT CARDS */
+
+.event-card,
+.log-card {
+  background-color: #fafafa;
+  border: 1px solid #e6e6e6;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.event-card h3,
+.log-card h4 {
+  margin-bottom: 8px;
+}
+
+.event-card p {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+/* BOOK AND DELETE BUTTONS */
+
+.event-card button {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.log-card button {
+  background-color: #d32f2f;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.log-card button:hover {
+  background-color: #b71c1c;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+  nav {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  nav div {
+    justify-content: center;
+  }
+}
