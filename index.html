@@ -1,16 +1,56 @@
-<html></html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>JavaScript Events</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="index.css">
+  <title>Active Events</title>
+
 </head>
 <body>
-    <h1>JavaScript Events</h1>
-    <button id="login">log in</button>
-    <p id="demo">login to proceed</p>
 
-    <script>
-        document.getElementById("login").addEventListener("click", function() {
-            window.location.href = 'login.html';
-        });
-    </script>
+    <nav>
+    <img src="/images/active.png" alt="Logo">
+  </nav>
+
+  <div class="slider">
+    <div class="slide active" style="background-image: url('/images/photos/2148757434.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/2149500464.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/2148757476.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/2150923246.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/2150932924.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/2151108196.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/photos/71785.jpg');"></div>
+    <div class="slide" style="background-image: url('/images/hero-img.jpg');"></div>
+
+    <div class="overlay">
+      <div class="content">
+        <h1>Manage Events Without Stress</h1>
+        <p>
+          Create events, book experiences, and manage your event life in one simple platform.
+          Built for speed, clarity, and ease of use.
+        </p>
+        <button class="cta-btn" onclick="getStarted()">Get Started</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll(".slide");
+    let currentSlide = 0;
+
+    function showNextSlide() {
+      slides[currentSlide].classList.remove("active");
+      currentSlide = (currentSlide + 1) % slides.length;
+      slides[currentSlide].classList.add("active");
+    }
+
+    setInterval(showNextSlide, 4000);
+
+    function getStarted() {
+      window.location.href = "signup.html";
+    }
+  </script>
+
 </body>
 </html>

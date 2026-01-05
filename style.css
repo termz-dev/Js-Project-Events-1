@@ -21,6 +21,9 @@ nav{
     padding: 20px;
     width: 160px;
 }
+nav img{
+    width: 100px;
+}
 .form-wrapper{
     position: absolute;
     padding: 60px;
